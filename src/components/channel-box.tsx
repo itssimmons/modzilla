@@ -1,0 +1,71 @@
+import { Box, Flex, Image, Text } from '@chakra-ui/react'
+
+import resolveStatusProps from '@/lib/utils/resolve-status-props'
+
+interface ChannelBoxProps {
+  players: User[]
+}
+
+export default function ChannelBox({ players, ...props }: ChannelBoxProps) {
+  return (
+    <Flex
+      data-role='channel'
+      as='aside'
+      w='200px'
+      gridRow='1/3'
+      gridColumn='1/2'
+      flexDir='column'
+      borderRight='1px solid {colors.gray.800}'
+      {...props}
+    >
+      <Text
+        as='strong'
+        py={1.5}
+        fontWeight={500}
+        fontSize='sm'
+        textAlign='center'
+        borderBottom='1px solid {colors.border}'
+      >
+        # Welcome Channel 👋
+      </Text>
+      <Flex flexDir='row' overflowY='auto'>
+        <Flex flexDir='column' w='full'>
+          {players.length > 0 &&
+            players.map((p) => {
+              const r = resolveStatusProps(p.status)
+
+              return (
+                <Box
+                  key={p.id}
+                  display='flex'
+                  columnGap={3}
+                  alignItems='center'
+                  cursor='pointer'
+                  pl={2}
+                  _hover={{ backgroundColor: 'gray.700' }}
+                >
+                  <Flex
+                    flexDir='row'
+                    alignItems='center'
+                    columnGap={1.5}
+                    py={1}
+                  >
+                    <Image
+                      w={5}
+                      h={5}
+                      src={p.avatar}
+                      borderRadius='full'
+                      border={`2px solid {colors.${r.borderColor}}`}
+                    />
+                    <Text fontSize='small' fontWeight={500} color='gray.300'>
+                      {p.username}
+                    </Text>
+                  </Flex>
+                </Box>
+              )
+            })}
+        </Flex>
+      </Flex>
+    </Flex>
+  )
+}
