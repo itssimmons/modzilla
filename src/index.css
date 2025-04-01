@@ -1,7 +1,14 @@
 *,
 *::before,
 *::after {
-    margin: 0px;
-    padding: 0px;
-    box-sizing: border-box;
+    cursor: none !important;
+}
+
+@keyframes jump {
+    0%, 60%, 100% {
+        transform: initial;
+      }
+      30% {
+        transform: translateY(-2px);
+      }
 }

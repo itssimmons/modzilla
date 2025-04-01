@@ -1,12 +1,12 @@
+import { useEffect, useRef } from 'react'
 import {
+  Avatar,
   Badge,
   Box,
   Container,
-  Image,
   Text,
   type BoxProps
 } from '@chakra-ui/react'
-import { useEffect, useRef } from 'react'
 
 import getPlayer from '@/lib/utils/get-player'
 import Dayjs from '@/third-party/day'
@@ -34,7 +34,9 @@ export default function ChatBox({ messages, players, ...props }: ChatBoxProps) {
       gridColumn='2/3'
       overflowY='scroll'
       scrollbarWidth='thin'
-      p={3}
+      px={3}
+      pt={3}
+      pb={4}
       {...props}
     >
       {messages.length > 0 &&
@@ -66,7 +68,9 @@ export default function ChatBox({ messages, players, ...props }: ChatBoxProps) {
             >
               <Box display='flex' columnGap={2} alignItems='center'>
                 {(!prevMessageItsMine || i === 0) && (
-                  <Image src={user?.avatar} borderRadius='full' h={5} w={5} />
+                  <Avatar.Root w={5} h={5}>
+                    <Avatar.Image src={user.avatar} />
+                  </Avatar.Root>
                 )}
                 {(!prevMessageItsMine || i === 0) && (
                   <Badge

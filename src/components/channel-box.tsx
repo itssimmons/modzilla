@@ -1,12 +1,15 @@
-import { Box, Flex, Image, Text } from '@chakra-ui/react'
+import { Avatar, Box, Flex, Image, Text } from '@chakra-ui/react'
 
 import resolveStatusProps from '@/lib/utils/resolve-status-props'
+import useSession from '@/hooks/useSession'
 
 interface ChannelBoxProps {
   players: User[]
 }
 
 export default function ChannelBox({ players, ...props }: ChannelBoxProps) {
+  const { session } = useSession()
+
   return (
     <Flex
       data-role='channel'
@@ -48,17 +51,18 @@ export default function ChannelBox({ players, ...props }: ChannelBoxProps) {
                     flexDir='row'
                     alignItems='center'
                     columnGap={1.5}
-                    py={1}
+                    py={1.5}
                   >
-                    <Image
-                      w={5}
-                      h={5}
-                      src={p.avatar}
-                      borderRadius='full'
-                      border={`2px solid {colors.${r.borderColor}}`}
-                    />
+                    <Avatar.Root
+                      w={4.5}
+                      h={4.5}
+                      boxShadow={`0px 0px 0px 1px {colors.gray.800},
+                      0px 0px 0px 3px {colors.${r.color}}`}
+                    >
+                      <Avatar.Image src={p.avatar} />
+                    </Avatar.Root>
                     <Text fontSize='small' fontWeight={500} color='gray.300'>
-                      {p.username}
+                      {p.username} {p.id === session?.id && '(You)'}
                     </Text>
                   </Flex>
                 </Box>

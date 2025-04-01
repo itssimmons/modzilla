@@ -16,6 +16,17 @@ interface User {
   status: ConnectionActivity
 }
 
+type AxisCoords = { x: number; y: number }
+
+namespace Player {
+  export type Coords = {
+    user_id: number
+    color: Color.Hex | `{${string}}`
+    room: string
+    username: string
+  } & AxisCoords
+}
+
 namespace Color {
   export type Hex = `#${string}`
 }

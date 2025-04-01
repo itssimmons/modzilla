@@ -1,5 +1,6 @@
 export enum Status {
   Offline = 'offline',
   Online = 'online',
-  Writing = 'writing'
+  Idle = 'idle',
+  Typing = 'typing'
 }

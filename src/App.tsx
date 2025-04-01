@@ -3,9 +3,9 @@ import { Center, Circle, Container, Flex, Grid, Text } from '@chakra-ui/react'
 
 import ChannelBox from './components/channel-box'
 import ChatBox from './components/chat-box'
-import ConnectingOverlay from './components/connecting-overlay'
+import Dialog from './components/dialog'
+import PlayerCursors from './components/player-cursors'
 import TextBox from './components/text-box'
-import UnauthorizedHintOverlay from './components/unauthorized-hint-overlay'
 import { Status } from './enums'
 import useHydratedEffect from './hooks/useHydratedEffect'
 import useSession from './hooks/useSession'
@@ -22,6 +22,7 @@ function App() {
   const [connecting, setConnecting] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [players, setPlayers] = useState<User[]>([])
+  const [missedMessages, setMissedMessages] = useState<Message[]>([])
 
   const location = useMemo(() => window.location, [window.location])
   const history = useMemo(() => window.history, [window.history])
@@ -41,20 +42,20 @@ function App() {
       const userId = searchParams.get('userId')!
 
       if (document.visibilityState === 'hidden') {
-        channelNp.emit('left', { room: roomId, user: session })
+        channelNp.emit('idle', { room: roomId, user: session })
         UserService.updateStatus({
-          status: Status.Offline,
+          status: Status.Idle,
           userId: Number(userId)
         })
-          .then(console.debug)
+          .then(console.info)
           .catch(console.error)
       } else {
-        channelNp.emit('join', { room: roomId, user: session })
+        channelNp.emit('online', { room: roomId, user: session })
         UserService.updateStatus({
           status: Status.Online,
           userId: Number(userId)
         })
-          .then(console.debug)
+          .then(console.info)
           .catch(console.error)
       }
     }
@@ -67,11 +68,17 @@ function App() {
   }, [session])
 
   useHydratedEffect(() => {
+    if (missedMessages.length > 0) {
+      document.title = `(${missedMessages.length}) Krazy-Chat | a real-time chat app`
+    }
+  }, [missedMessages])
+
+  useHydratedEffect(() => {
     channelNp.on(
       'activity:channel',
       (payload: { user: User; is: 'new' | 'join' | 'leave' }) => {
         const { is, user } = payload
-        console.debug('Activity received from server', payload)
+        console.info('Activity received from server', payload)
 
         setPlayers((players) => {
           const copy = [...players]
@@ -93,14 +100,28 @@ function App() {
   }, [players])
 
   useHydratedEffect(() => {
-    channelNp.on('main:channel', (message: Message) => {
-      console.debug('Message received from server', message)
+    let isVisible = true
 
+    const listener = () => {
+      isVisible = document.visibilityState === 'visible'
+
+      if (isVisible) {
+        document.title = 'Krazy-Chat | a real-time chat app'
+        setMissedMessages([])
+      }
+    }
+
+    document.addEventListener('visibilitychange', listener)
+
+    channelNp.on('main:channel', (message: Message) => {
+      console.info('Message received from server', message)
       setMessages((prev) => [...prev, message])
+      if (!isVisible) setMissedMessages((prev) => [...prev, message])
     })
 
     return () => {
       channelNp.off('main:channel')
+      document.removeEventListener('visibilitychange', listener)
     }
   }, [])
 
@@ -128,14 +149,16 @@ function App() {
       room: ROOM_ID
     }
 
-    console.debug(registerPayload)
+    console.info(registerPayload)
 
     UserService.register(registerPayload)
       .then(({ user, is }) => {
-        console.debug('User registered', user)
+        console.log('User connected & registered: ', user)
         setSession(user)
 
-        channelNp.emit('join', { room: ROOM_ID, user, op: is })
+        channelNp.emit('connected', { room: ROOM_ID, user, op: is })
+        channelNp.emit('join', { room: ROOM_ID })
+
         searchParams.set('userId', String(user.id))
         searchParams.set('roomId', ROOM_ID)
         history.pushState({ user }, '', `?${searchParams.toString()}`)
@@ -150,9 +173,11 @@ function App() {
   )
 
   return (
-    <Center w='vw' h='vh'>
-      {!authenticated && <UnauthorizedHintOverlay />}
-      {connecting && <ConnectingOverlay />}
+    <Center w='vw' h='vh' as='section' overflow='hidden'>
+      <PlayerCursors players={players} />
+
+      {!authenticated && <Dialog.Unauthorized />}
+      {connecting && <Dialog.Connecting />}
 
       <Container as='main' display='flex' flexDir='column' w='fit' rowGap={1}>
         <Flex as='header' flexDir='row'>
@@ -173,7 +198,7 @@ function App() {
         >
           <ChannelBox players={players} />
           <ChatBox messages={messages} players={players} />
-          <TextBox dispatch={setMessages} />
+          <TextBox dispatch={setMessages} players={players} />
         </Grid>
       </Container>
     </Center>
