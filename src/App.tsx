@@ -24,8 +24,8 @@ function App() {
   const [players, setPlayers] = useState<User[]>([])
   const [missedMessages, setMissedMessages] = useState<Message[]>([])
 
-  const location = useMemo(() => window.location, [window.location])
-  const history = useMemo(() => window.history, [window.history])
+  const location = useMemo(() => window.location, [])
+  const history = useMemo(() => window.history, [])
   const searchParams = useMemo(
     () => new URLSearchParams(location.search),
     [location.search]

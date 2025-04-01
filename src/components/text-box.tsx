@@ -59,7 +59,7 @@ export default function TextBox({ dispatch, players, ...props }: TextBoxProps) {
       })
       setIsTyping(false)
     }, 1000),
-    [session]
+    []
   )
 
   const handleChange = (ev: React.ChangeEvent<HTMLTextAreaElement>) => {
