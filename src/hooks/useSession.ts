@@ -1,12 +1,12 @@
 import { useContext, useMemo } from 'react'
 
-import { sessionCtx } from '@/lib/providers/Session.provider'
+import { SessionCtx } from '@/providers/Session.provider'
 
 export default function useSession() {
-  const { session, setSession } = useContext(sessionCtx)
+  const { session, setSession } = useContext(SessionCtx)
 
   const room = useMemo(
-    () => new URLSearchParams(window.location.search).get('roomId') ?? null,
+    () => new URLSearchParams(window.location.search).get('roomID') ?? null,
     []
   )
 

@@ -46,13 +46,13 @@ function PlayerCursors({ players }: PlayerCursorsProps) {
       room
     }
 
-    console.info('sending cursor coords: ', payload)
+    console.debug('sending cursor coords: ', payload)
     channelNp.emit('cursor:move', payload)
   }, [debouncedCoords, session, room])
 
   useEffect(() => {
     channelNp.on('cursor:move', (payload: Player.Coords) => {
-      console.info('received cursor coords: ', payload)
+      console.debug('received cursor coords: ', payload)
 
       const mutableCursors = [...cursors]
       const existingCursor = mutableCursors.findIndex(

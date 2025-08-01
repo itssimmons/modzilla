@@ -9,9 +9,9 @@ import TextBox from './components/text-box'
 import { Status } from './enums'
 import useHydratedEffect from './hooks/useHydratedEffect'
 import useSession from './hooks/useSession'
-import Hex from './prototypes/Hex.prototype'
-import ChatService from './services/Chat.service'
-import UserService from './services/User.service'
+import Hex from './lib/prototypes/Hex.prototype'
+import ChatService from './lib/services/Chat.service'
+import UserService from './lib/services/User.service'
 import channelNp from './socket'
 
 const ROOM_ID = '53c38a2c-9640-4957-92d7-0d4400b2b9ac'
@@ -38,24 +38,24 @@ function App() {
 
   useEffect(() => {
     const listener = () => {
-      const roomId = searchParams.get('roomId')!
-      const userId = searchParams.get('userId')!
+      const roomID = searchParams.get('roomID')!
+      const userID = searchParams.get('userID')!
 
       if (document.visibilityState === 'hidden') {
-        channelNp.emit('idle', { room: roomId, user: session })
+        channelNp.emit('idle', { room: roomID, user: session })
         UserService.updateStatus({
           status: Status.Idle,
-          userId: Number(userId)
+          userID: Number(userID)
         })
-          .then(console.info)
+          .then(console.debug)
           .catch(console.error)
       } else {
-        channelNp.emit('online', { room: roomId, user: session })
+        channelNp.emit('online', { room: roomID, user: session })
         UserService.updateStatus({
           status: Status.Online,
-          userId: Number(userId)
+          userID: Number(userID)
         })
-          .then(console.info)
+          .then(console.debug)
           .catch(console.error)
       }
     }
@@ -69,7 +69,7 @@ function App() {
 
   useHydratedEffect(() => {
     if (missedMessages.length > 0) {
-      document.title = `(${missedMessages.length}) Krazy-Chat | a real-time chat app`
+      document.title = `(${missedMessages.length}) modzilla | a real-time chat app`
     }
   }, [missedMessages])
 
@@ -78,7 +78,7 @@ function App() {
       'activity:channel',
       (payload: { user: User; is: 'new' | 'join' | 'leave' }) => {
         const { is, user } = payload
-        console.info('Activity received from server', payload)
+        console.debug('Activity received from server', payload)
 
         setPlayers((players) => {
           const copy = [...players]
@@ -106,7 +106,7 @@ function App() {
       isVisible = document.visibilityState === 'visible'
 
       if (isVisible) {
-        document.title = 'Krazy-Chat | a real-time chat app'
+        document.title = 'modzilla | a real-time chat app'
         setMissedMessages([])
       }
     }
@@ -114,7 +114,7 @@ function App() {
     document.addEventListener('visibilitychange', listener)
 
     channelNp.on('main:channel', (message: Message) => {
-      console.info('Message received from server', message)
+      console.debug('Message received from server', message)
       setMessages((prev) => [...prev, message])
       if (!isVisible) setMissedMessages((prev) => [...prev, message])
     })
@@ -127,7 +127,6 @@ function App() {
 
   useHydratedEffect(() => {
     UserService.all().then(setPlayers)
-    ChatService.all().then(setMessages)
   }, [])
 
   useHydratedEffect(() => {
@@ -149,18 +148,18 @@ function App() {
       room: ROOM_ID
     }
 
-    console.info(registerPayload)
+    console.debug(registerPayload)
 
     UserService.register(registerPayload)
       .then(({ user, is }) => {
-        console.log('User connected & registered: ', user)
+        console.debug('User connected & registered: ', user)
         setSession(user)
 
         channelNp.emit('connected', { room: ROOM_ID, user, op: is })
         channelNp.emit('join', { room: ROOM_ID })
 
-        searchParams.set('userId', String(user.id))
-        searchParams.set('roomId', ROOM_ID)
+        searchParams.set('userID', String(user.id))
+        searchParams.set('roomID', ROOM_ID)
         history.pushState({ user }, '', `?${searchParams.toString()}`)
       })
       .catch(console.error)
@@ -184,7 +183,7 @@ function App() {
           <Flex flexDir='row' alignItems='center' columnGap={2}>
             <Circle backgroundColor='green.500' size={2} borderRadius='full' />
             <Text fontSize='sm' fontWeight={500} color='gray.400'>
-              {playersOnline} players online
+              {playersOnline} users online
             </Text>
           </Flex>
         </Flex>
@@ -197,8 +196,8 @@ function App() {
           overflow='hidden'
         >
           <ChannelBox players={players} />
-          <ChatBox messages={messages} players={players} />
-          <TextBox dispatch={setMessages} players={players} />
+          <ChatBox players={players} />
+          <TextBox players={players} />
         </Grid>
       </Container>
     </Center>

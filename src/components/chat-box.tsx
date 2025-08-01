@@ -1,29 +1,42 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Avatar,
   Badge,
   Box,
   Container,
+  Menu,
+  Portal,
   Text,
   type BoxProps
 } from '@chakra-ui/react'
+import { v4 as uuidv4 } from 'uuid'
 
-import getPlayer from '@/lib/utils/get-player'
-import Dayjs from '@/third-party/day'
+import getPlayer from '@/lib/helpers/get-player'
+import Dayjs from '@/lib/third-party/day'
+import useMessage from '@/hooks/useMessage'
+
+import React from './react'
 
 interface ChatBoxProps extends BoxProps {
-  messages: Message[]
   players: User[]
 }
 
-export default function ChatBox({ messages, players, ...props }: ChatBoxProps) {
+export default function ChatBox({ players, ...props }: ChatBoxProps) {
   const scrollBoxRef = useRef<HTMLDivElement>(null)
+  const [action, setAction] = useState<'react' | 'edit' | 'delete' | null>(null)
+
+  const { state: messages, react } = useMessage()
 
   useEffect(() => {
     const { current: scrollBox } = scrollBoxRef
     if (!scrollBox) return
     scrollBox.scrollTo(0, scrollBox.scrollHeight)
   }, [messages])
+
+  const reactMessage = (id: Message['id']) => (e: { value: string | null }) => {
+    if (!e.value) return
+    react(id, { id: uuidv4(), emoji: e.value, count: 1 })
+  }
 
   return (
     <Container
@@ -51,10 +64,10 @@ export default function ChatBox({ messages, players, ...props }: ChatBoxProps) {
 
           const formatDatetime = (date: string) => {
             const now = Dayjs()
-            const createdAt = Dayjs(date, 'YYYY-MM-DD HH:mm:ss')
-            if (now.diff(createdAt, 'day') <= 1)
+            const createdAt = Dayjs(date)
+            if (now.diff(createdAt, 'hours') <= 24)
               return `${createdAt.fromNow(true)} ago`
-            return createdAt.format('YYYY-MM-DD HH:mm:ss')
+            return createdAt.format('DD MMM YY, HH:mm')
           }
 
           return (
@@ -62,14 +75,14 @@ export default function ChatBox({ messages, players, ...props }: ChatBoxProps) {
               key={m.id}
               py='.5px'
               css={{
-                '--dt-visibility': 'hidden',
-                _hover: { '--dt-visibility': 'visible' }
+                '--datetime-visibility': 'hidden',
+                _hover: { '--datetime-visibility': 'visible' }
               }}
             >
               <Box display='flex' columnGap={2} alignItems='center'>
                 {(!prevMessageItsMine || i === 0) && (
                   <Avatar.Root w={5} h={5}>
-                    <Avatar.Image src={user.avatar} />
+                    <Avatar.Image loading='lazy' src={user.avatar} />
                   </Avatar.Root>
                 )}
                 {(!prevMessageItsMine || i === 0) && (
@@ -83,19 +96,54 @@ export default function ChatBox({ messages, players, ...props }: ChatBoxProps) {
                   </Badge>
                 )}
               </Box>
-              <Text
-                fontSize='small'
-                fontWeight={400}
-                ml={8}
-                color={isAssistant ? 'gray.500' : 'gray.100'}
-                mt={!prevMessageItsMine ? 0.5 : 0}
+
+              <Menu.Root onSelect={(e) => setAction(e.value as any)}>
+                <Menu.ContextTrigger width='full'>
+                  <Text
+                    fontSize='small'
+                    fontWeight={400}
+                    rounded='md'
+                    ml={8}
+                    p={1}
+                    textAlign='left'
+                    mt={!prevMessageItsMine ? 0.5 : 0}
+                    color={isAssistant ? 'gray.500' : 'gray.100'}
+                    _hover={{ background: 'whiteAlpha.100' }}
+                  >
+                    {m.message}
+                  </Text>
+                </Menu.ContextTrigger>
+                <Portal>
+                  <Menu.Positioner>
+                    <Menu.Content>
+                      <Menu.Item value='react'>React</Menu.Item>
+                      <Menu.Item value='edit'>Edit</Menu.Item>
+                      <Menu.Item value='delete' color='red.500'>
+                        Delete
+                      </Menu.Item>
+                    </Menu.Content>
+                  </Menu.Positioner>
+                </Portal>
+              </Menu.Root>
+
+              <React.Root
+                open={action === 'react'}
+                setOpen={(open) => setAction(open ? 'react' : null)}
+                onSelect={reactMessage(m.id)}
               >
-                {m.message}
-              </Text>
+                <Portal>
+                  <React.Positioner origin='mouse'>
+                    <React.List>
+                      <React.Item value='👍'>👍</React.Item>
+                      <React.Item value='👎'>👎</React.Item>
+                    </React.List>
+                  </React.Positioner>
+                </Portal>
+              </React.Root>
 
               {!nextMessageItsMine && (
                 <Text
-                  visibility='var(--dt-visibility)'
+                  visibility='var(--datetime-visibility)'
                   fontSize='x-small'
                   color='gray.500'
                   fontWeight={400}

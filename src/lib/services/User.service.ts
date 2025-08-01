@@ -1,4 +1,4 @@
-import http from '@/lib/utils/http'
+import http from '@/lib/helpers/http'
 import { Status } from '@/enums'
 import { env } from '@/env'
 
@@ -56,12 +56,12 @@ class UserService {
 
   public static async updateStatus({
     status,
-    userId
+    userID
   }: {
     status: Status
-    userId: number
+    userID: number
   }) {
-    const res = await http<User>(`/players/${userId}`, {
+    const res = await http<User>(`/players/${userID}`, {
       method: 'PATCH',
       redirect: 'follow',
       baseUrl: env.VITE_BASE_URL,

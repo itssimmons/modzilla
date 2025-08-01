@@ -1,4 +1,4 @@
-import http from '@/lib/utils/http'
+import http from '@/lib/helpers/http'
 import { env } from '@/env'
 
 import 'isomorphic-fetch'
@@ -21,10 +21,10 @@ class ChatService {
 
   public static async save({
     message,
-    userId: user_id
+    userID: user_id
   }: {
     message: string
-    userId: number
+    userID: number
   }) {
     const res = await http<Message>('/chats/channel', {
       method: 'POST',

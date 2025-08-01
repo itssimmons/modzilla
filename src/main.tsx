@@ -3,17 +3,22 @@ import { createRoot } from 'react-dom/client'
 
 import App from './App.tsx'
 import { Provider as ChakraProvider } from './components/ui/provider.tsx'
+import ConfigProvider from './providers/Config.provider.tsx'
+import MessageProvider from './providers/Message.provider.tsx'
+import SessionProvider from './providers/Session.provider.tsx'
 
 import './index.css'
 
-import SessionProvider from './lib/providers/Session.provider.tsx'
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <SessionProvider>
-      <ChakraProvider forcedTheme='dark'>
-        <App />
-      </ChakraProvider>
-    </SessionProvider>
+    <ConfigProvider>
+      <MessageProvider>
+        <SessionProvider>
+          <ChakraProvider forcedTheme='dark'>
+            <App />
+          </ChakraProvider>
+        </SessionProvider>
+      </MessageProvider>
+    </ConfigProvider>
   </StrictMode>
 )

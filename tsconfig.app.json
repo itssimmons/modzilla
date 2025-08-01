@@ -32,6 +32,7 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "verbatimModuleSyntax": true,
     "typeRoots": ["node_modules/@types", "./"],
     "types": ["./declarations.d.ts"]
   },

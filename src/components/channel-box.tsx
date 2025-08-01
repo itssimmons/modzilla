@@ -1,6 +1,6 @@
 import { Avatar, Box, Flex, Image, Text } from '@chakra-ui/react'
 
-import resolveStatusProps from '@/lib/utils/resolve-status-props'
+import resolveStatusProps from '@/lib/helpers/resolve-status-props'
 import useSession from '@/hooks/useSession'
 
 interface ChannelBoxProps {

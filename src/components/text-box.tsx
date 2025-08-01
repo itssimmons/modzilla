@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useMemo,
-  useState,
-  type Dispatch,
-  type SetStateAction
-} from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   Avatar,
   AvatarGroup,
@@ -18,20 +12,21 @@ import {
 } from '@chakra-ui/react'
 import { v4 as uuidv4 } from 'uuid'
 
-import debounce from '@/lib/utils/debounce'
+import debounce from '@/lib/helpers/debounce'
+import ChatService from '@/lib/services/Chat.service'
+import Dayjs from '@/lib/third-party/day'
+import useMessage from '@/hooks/useMessage'
 import useSession from '@/hooks/useSession'
 import { Status } from '@/enums'
-import ChatService from '@/services/Chat.service'
 import channelNp from '@/socket'
-import Dayjs from '@/third-party/day'
 
 interface TextBoxProps extends StackProps {
-  dispatch: Dispatch<SetStateAction<Message[]>>
   players: User[]
 }
 
-export default function TextBox({ dispatch, players, ...props }: TextBoxProps) {
+export default function TextBox({ players, ...props }: TextBoxProps) {
   const { session, room } = useSession()
+  const { append } = useMessage()
 
   const [txt, setTxt] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -97,26 +92,27 @@ export default function TextBox({ dispatch, players, ...props }: TextBoxProps) {
     const searchParams = new URLSearchParams(location.search)
 
     const id = uuidv4()
-    const userId = searchParams.get('userId')!
-    const roomId = searchParams.get('roomId')!
+    const userID = searchParams.get('userID')!
+    const roomID = searchParams.get('roomID')!
 
-    const newMessage = {
+    const newMessage: Message = {
       id,
       message: txt.trim(),
-      sender_id: Number(userId),
+      sender_id: Number(userID),
       created_at: Dayjs().format('YYYY-MM-DD HH:mm:ss'),
       modified_at: null,
-      modified_id: null
+      modified_id: null,
+      reactions: []
     }
 
     setTxt('')
 
-    dispatch((prev) => [...prev, newMessage])
-    ChatService.save({ message: txt, userId: Number(userId) })
+    append(newMessage)
+    ChatService.save({ message: txt, userID: Number(userID) })
 
     channelNp.emit('message', {
-      room: roomId,
-      user_id: Number(userId),
+      room: roomID,
+      user_id: Number(userID),
       message: txt
     })
   }
@@ -177,7 +173,7 @@ export default function TextBox({ dispatch, players, ...props }: TextBoxProps) {
           onChange={handleChange}
           onKeyDown={handleEnter}
           value={txt}
-          placeholder='Start writing your (Real-Time) message...'
+          placeholder='Write something interesting...'
           resize='none'
           size='xs'
           p={2}

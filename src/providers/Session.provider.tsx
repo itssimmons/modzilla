@@ -1,6 +1,6 @@
 import { createContext, useMemo, useState } from 'react'
 
-export const sessionCtx = createContext<{
+export const SessionCtx = createContext<{
   session: User | null
   setSession: (session: User | null) => void
 }>({
@@ -13,7 +13,7 @@ const SessionProvider = ({ children }: { children: React.ReactNode }) => {
 
   const value = useMemo(() => ({ session, setSession }), [session])
 
-  return <sessionCtx.Provider value={value}>{children}</sessionCtx.Provider>
+  return <SessionCtx.Provider value={value}>{children}</SessionCtx.Provider>
 }
 
 export default SessionProvider
