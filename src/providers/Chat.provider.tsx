@@ -4,17 +4,18 @@ import ChatService from '@/lib/services/Chat.service'
 import useHydratedEffect from '@/hooks/useHydratedEffect'
 import messageReducer, { initialState } from '@/reducers/message.reducer'
 
-const StateContext = createContext<MessageState | undefined>(undefined)
-const DispatchContext = createContext<Dispatch<MessageAction> | undefined>(
+const StateContext = createContext<ChatState | undefined>(undefined)
+const DispatchContext = createContext<Dispatch<ChatAction> | undefined>(
   undefined
 )
 
-const MessageProvider = ({ children }: { children: React.ReactNode }) => {
+const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = useReducer(messageReducer, initialState)
 
   useHydratedEffect(() => {
     const init = async () => {
-      const messages = await ChatService.all()
+      const roomId = new URLSearchParams(window.location.search).get('roomId')!
+      const messages = await ChatService.all({ roomId })
       dispatch({ type: 'INIT', payload: messages })
     }
 
@@ -32,15 +33,15 @@ const MessageProvider = ({ children }: { children: React.ReactNode }) => {
 
 export function useMessageState() {
   const context = useContext(StateContext)
-  if (!context) throw new Error('useTodoState must be used within TodoProvider')
+  if (!context) throw new Error('useMessageState must be used within ChatProvider')
   return context
 }
 
 export function useMessageDispatch() {
   const context = useContext(DispatchContext)
   if (!context)
-    throw new Error('useTodoDispatch must be used within TodoProvider')
+    throw new Error('useMessageDispatch must be used within ChatProvider')
   return context
 }
 
-export default MessageProvider
+export default ChatProvider

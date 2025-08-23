@@ -15,7 +15,7 @@ import { v4 as uuidv4 } from 'uuid'
 import debounce from '@/lib/helpers/debounce'
 import ChatService from '@/lib/services/Chat.service'
 import Dayjs from '@/lib/third-party/day'
-import useMessage from '@/hooks/useMessage'
+import useMessage from '@/hooks/useChat'
 import useSession from '@/hooks/useSession'
 import { Status } from '@/enums'
 import channelNp from '@/socket'
@@ -92,13 +92,14 @@ export default function TextBox({ players, ...props }: TextBoxProps) {
     const searchParams = new URLSearchParams(location.search)
 
     const id = uuidv4()
-    const userID = searchParams.get('userID')!
-    const roomID = searchParams.get('roomID')!
+    const userId = searchParams.get('userId')!
+    const roomId = searchParams.get('roomId')!
 
-    const newMessage: Message = {
+    const newMessage: Chat = {
       id,
       message: txt.trim(),
-      sender_id: Number(userID),
+      sender_id: Number(userId),
+      room_id: roomId,
       created_at: Dayjs().format('YYYY-MM-DD HH:mm:ss'),
       modified_at: null,
       modified_id: null,
@@ -107,12 +108,12 @@ export default function TextBox({ players, ...props }: TextBoxProps) {
 
     setTxt('')
 
-    append(newMessage)
-    ChatService.save({ message: txt, userID: Number(userID) })
+    append({ message: newMessage, roomId })
+    ChatService.send({ message: txt, senderId: Number(userId), roomId }) // delegate to a server thread
 
     channelNp.emit('message', {
-      room: roomID,
-      user_id: Number(userID),
+      room: roomId,
+      user_id: Number(userId),
       message: txt
     })
   }

@@ -1,30 +1,37 @@
+import { useEffect } from 'react'
+
 import {
   useMessageDispatch,
   useMessageState
-} from '@/providers/Message.provider'
-import { useEffect } from 'react'
+} from '@/providers/Chat.provider'
 
 export default function useMessage() {
   const dispatch = useMessageDispatch()
   const state = useMessageState()
-	
-	useEffect(() => {
+
+  useEffect(() => {
     console.debug(state)
   }, [state])
 
-  const append = (message: Message) => {
-    dispatch({ type: 'ADD', payload: message })
+  const append = ({
+    message,
+    roomId
+  }: {
+    message: Chat
+    roomId: string
+  }) => {
+    dispatch({ type: 'ADD', payload: { message, roomId } })
   }
 
-  const edit = (message: Message) => {
+  const edit = (message: Chat) => {
     dispatch({ type: 'EDIT', payload: message })
   }
 
-  const remove = (id: Message['id']) => {
+  const remove = (id: Chat['id']) => {
     dispatch({ type: 'REMOVE', payload: { id } })
   }
 
-  const react = (id: Message['id'], reaction: Reaction) => {
+  const react = (id: Chat['id'], reaction: Reaction) => {
     dispatch({ type: 'REACT', payload: { id, reaction } })
   }
 

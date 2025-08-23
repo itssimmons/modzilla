@@ -13,7 +13,8 @@ import { v4 as uuidv4 } from 'uuid'
 
 import getPlayer from '@/lib/helpers/get-player'
 import Dayjs from '@/lib/third-party/day'
-import useMessage from '@/hooks/useMessage'
+import useMessage from '@/hooks/useChat'
+import useSession from '@/hooks/useSession'
 
 import React from './react'
 
@@ -25,6 +26,7 @@ export default function ChatBox({ players, ...props }: ChatBoxProps) {
   const scrollBoxRef = useRef<HTMLDivElement>(null)
   const [action, setAction] = useState<'react' | 'edit' | 'delete' | null>(null)
 
+  const { session } = useSession()
   const { state: messages, react } = useMessage()
 
   useEffect(() => {
@@ -33,10 +35,19 @@ export default function ChatBox({ players, ...props }: ChatBoxProps) {
     scrollBox.scrollTo(0, scrollBox.scrollHeight)
   }, [messages])
 
-  const reactMessage = (id: Message['id']) => (e: { value: string | null }) => {
-    if (!e.value) return
-    react(id, { id: uuidv4(), emoji: e.value, count: 1 })
-  }
+  const reactMessage =
+    ({ id, senderId }: { id: Chat['id']; senderId: number }) =>
+    (e: { value: string | null }) => {
+      if (!e.value) return
+      react(id, {
+        id: uuidv4(),
+        emoji: e.value,
+        chat_id: id,
+        sender_id: senderId,
+        created_at: Date.now().toString(),
+        count: 1
+      })
+    }
 
   return (
     <Container
@@ -60,7 +71,7 @@ export default function ChatBox({ players, ...props }: ChatBoxProps) {
           const nextMessage = messages.at(i + 1)
           const prevMessageItsMine = prevMessage?.sender_id === user?.id
           const nextMessageItsMine = nextMessage?.sender_id === user?.id
-          const isAssistant = user?.role === 'assistant'
+          const isStaff = user?.role === 'staff'
 
           const formatDatetime = (date: string) => {
             const now = Dayjs()
@@ -97,7 +108,7 @@ export default function ChatBox({ players, ...props }: ChatBoxProps) {
                 )}
               </Box>
 
-              <Menu.Root onSelect={(e) => setAction(e.value as any)}>
+              <Menu.Root onSelect={(e) => setAction(e.value as typeof action)}>
                 <Menu.ContextTrigger width='full'>
                   <Text
                     fontSize='small'
@@ -107,7 +118,7 @@ export default function ChatBox({ players, ...props }: ChatBoxProps) {
                     p={1}
                     textAlign='left'
                     mt={!prevMessageItsMine ? 0.5 : 0}
-                    color={isAssistant ? 'gray.500' : 'gray.100'}
+                    color={isStaff ? 'gray.500' : 'gray.100'}
                     _hover={{ background: 'whiteAlpha.100' }}
                   >
                     {m.message}
@@ -129,7 +140,7 @@ export default function ChatBox({ players, ...props }: ChatBoxProps) {
               <React.Root
                 open={action === 'react'}
                 setOpen={(open) => setAction(open ? 'react' : null)}
-                onSelect={reactMessage(m.id)}
+                onSelect={reactMessage({ id: m.id, senderId: session!.id })}
               >
                 <Portal>
                   <React.Positioner origin='mouse'>

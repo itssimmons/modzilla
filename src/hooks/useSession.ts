@@ -6,7 +6,7 @@ export default function useSession() {
   const { session, setSession } = useContext(SessionCtx)
 
   const room = useMemo(
-    () => new URLSearchParams(window.location.search).get('roomID') ?? null,
+    () => new URLSearchParams(window.location.search).get('roomId') ?? null,
     []
   )
 

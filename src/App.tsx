@@ -10,7 +10,6 @@ import { Status } from './enums'
 import useHydratedEffect from './hooks/useHydratedEffect'
 import useSession from './hooks/useSession'
 import Hex from './lib/prototypes/Hex.prototype'
-import ChatService from './lib/services/Chat.service'
 import UserService from './lib/services/User.service'
 import channelNp from './socket'
 
@@ -20,9 +19,7 @@ function App() {
   const { session, setSession } = useSession()
 
   const [connecting, setConnecting] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([])
   const [players, setPlayers] = useState<User[]>([])
-  const [missedMessages, setMissedMessages] = useState<Message[]>([])
 
   const location = useMemo(() => window.location, [])
   const history = useMemo(() => window.history, [])
@@ -36,27 +33,17 @@ function App() {
     [searchParams]
   )
 
+  const roomId = useMemo(
+    () => searchParams.get('roomId') ?? ROOM_ID,
+    [searchParams]
+  )
+
   useEffect(() => {
     const listener = () => {
-      const roomID = searchParams.get('roomID')!
-      const userID = searchParams.get('userID')!
-
       if (document.visibilityState === 'hidden') {
-        channelNp.emit('idle', { room: roomID, user: session })
-        UserService.updateStatus({
-          status: Status.Idle,
-          userID: Number(userID)
-        })
-          .then(console.debug)
-          .catch(console.error)
+        channelNp.emit('idle', { room: roomId, user: session })
       } else {
-        channelNp.emit('online', { room: roomID, user: session })
-        UserService.updateStatus({
-          status: Status.Online,
-          userID: Number(userID)
-        })
-          .then(console.debug)
-          .catch(console.error)
+        channelNp.emit('online', { room: roomId, user: session })
       }
     }
 
@@ -65,13 +52,7 @@ function App() {
     return () => {
       document.removeEventListener('visibilitychange', listener)
     }
-  }, [session])
-
-  useHydratedEffect(() => {
-    if (missedMessages.length > 0) {
-      document.title = `(${missedMessages.length}) modzilla | a real-time chat app`
-    }
-  }, [missedMessages])
+  }, [session, roomId])
 
   useHydratedEffect(() => {
     channelNp.on(
@@ -100,32 +81,6 @@ function App() {
   }, [players])
 
   useHydratedEffect(() => {
-    let isVisible = true
-
-    const listener = () => {
-      isVisible = document.visibilityState === 'visible'
-
-      if (isVisible) {
-        document.title = 'modzilla | a real-time chat app'
-        setMissedMessages([])
-      }
-    }
-
-    document.addEventListener('visibilitychange', listener)
-
-    channelNp.on('main:channel', (message: Message) => {
-      console.debug('Message received from server', message)
-      setMessages((prev) => [...prev, message])
-      if (!isVisible) setMissedMessages((prev) => [...prev, message])
-    })
-
-    return () => {
-      channelNp.off('main:channel')
-      document.removeEventListener('visibilitychange', listener)
-    }
-  }, [])
-
-  useHydratedEffect(() => {
     UserService.all().then(setPlayers)
   }, [])
 
@@ -145,7 +100,7 @@ function App() {
       username,
       color: `#${color}`,
       avatar: `https://ui-avatars.com/api/?background=${color}&name=${username}&length=1`,
-      room: ROOM_ID
+      room: roomId
     }
 
     console.debug(registerPayload)
@@ -155,16 +110,16 @@ function App() {
         console.debug('User connected & registered: ', user)
         setSession(user)
 
-        channelNp.emit('connected', { room: ROOM_ID, user, op: is })
-        channelNp.emit('join', { room: ROOM_ID })
+        channelNp.emit('connected', { room: roomId, user, op: is })
+        channelNp.emit('join', { room: roomId })
 
-        searchParams.set('userID', String(user.id))
-        searchParams.set('roomID', ROOM_ID)
+        searchParams.set('userId', String(user.id))
+        searchParams.set('roomId', roomId)
         history.pushState({ user }, '', `?${searchParams.toString()}`)
       })
       .catch(console.error)
       .finally(() => setConnecting(false))
-  }, [authenticated])
+  }, [authenticated, roomId])
 
   const playersOnline = useMemo(
     () => players.filter((p) => p.status === Status.Online).length,
@@ -189,7 +144,7 @@ function App() {
         </Flex>
         <Grid
           gridTemplateRows='300px 40px'
-          gridTemplateColumns='200px 1fr'
+          gridTemplateColumns='225px 1fr'
           border='1px solid {colors.gray.800}'
           width='600px'
           borderRadius='md'

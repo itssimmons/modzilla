@@ -33,8 +33,7 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "verbatimModuleSyntax": true,
-    "typeRoots": ["node_modules/@types", "./"],
-    "types": ["./declarations.d.ts"]
+    "typeRoots": ["node_modules/@types", "./types"],
   },
   "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts"],
   "exclude": ["node_modules"]

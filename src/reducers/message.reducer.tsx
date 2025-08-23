@@ -1,4 +1,4 @@
-export const initialState: MessageState = {
+export const initialState: ChatState = {
   messages: []
 }
 
@@ -11,16 +11,16 @@ export enum MessageActionType {
 }
 
 export default function messageReducer(
-  state: MessageState,
-  action: MessageAction
-): MessageState {
+  state: ChatState,
+  action: ChatAction
+): ChatState {
   switch (action.type) {
     case MessageActionType.INIT:
       return { ...state, messages: action.payload }
     case MessageActionType.ADD:
       return {
         ...state,
-        messages: [...state.messages, action.payload]
+        messages: [...state.messages, action.payload.message],
       }
     case 'EDIT':
       return {

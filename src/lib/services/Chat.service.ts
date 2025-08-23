@@ -4,8 +4,8 @@ import { env } from '@/env'
 import 'isomorphic-fetch'
 
 class ChatService {
-  public static async all() {
-    const res = await http<Message[]>('/chats/channel', {
+  public static async all({ roomId }: { roomId: string }) {
+    const res = await http<Chat[]>(`/chats/channel/${roomId}/`, {
       method: 'GET',
       redirect: 'follow',
       baseUrl: env.VITE_BASE_URL
@@ -19,18 +19,20 @@ class ChatService {
     return chats
   }
 
-  public static async save({
+  public static async send({
     message,
-    userID: user_id
+    senderId: sender_id,
+    roomId: room_id
   }: {
     message: string
-    userID: number
+    senderId: number
+    roomId: string
   }) {
-    const res = await http<Message>('/chats/channel', {
+    const res = await http<Chat>(`/chats/channel/${room_id}/`, {
       method: 'POST',
       redirect: 'follow',
       baseUrl: env.VITE_BASE_URL,
-      body: { message, user_id },
+      body: { message, sender_id },
       headers: {
         'Content-Type': 'application/json'
       }

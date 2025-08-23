@@ -56,12 +56,12 @@ class UserService {
 
   public static async updateStatus({
     status,
-    userID
+    userId
   }: {
     status: Status
-    userID: number
+    userId: number
   }) {
-    const res = await http<User>(`/players/${userID}`, {
+    const res = await http<User>(`/players/${userId}`, {
       method: 'PATCH',
       redirect: 'follow',
       baseUrl: env.VITE_BASE_URL,
