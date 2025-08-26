@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type Dispatch,
+  type MouseEvent,
   type ReactNode,
   type RefObject,
   type SetStateAction
@@ -16,60 +17,67 @@ import { ConfigCtx } from '@/providers/Config.provider'
 
 type ReactCtxState = {
   triggerRef: RefObject<HTMLDivElement | null> | null
+  parentRef: RefObject<HTMLDivElement | null> | null
   open: boolean
   setOpen: Dispatch<SetStateAction<boolean>>
-  value: string | null
-  setValue: Dispatch<SetStateAction<string | null>>
+  onSelect?: (e: { value: string | null }) => void
 }
 
 const ReactCtx = createContext<ReactCtxState>({
   triggerRef: null,
+  parentRef: null,
   // modal state (open/closed)
   open: false,
   setOpen: () => {},
-  // value of the selected item
-  value: null,
-  setValue: () => {}
+  onSelect: () => {}
 })
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace React {
-  export const Root = ({
-    children,
-    ...props
-  }: {
+  interface RootProps extends Omit<BoxProps, 'onSelect'> {
     onSelect?: (e: { value: string | null }) => void
     open?: boolean
     setOpen?: Dispatch<SetStateAction<boolean>>
     children: ReactNode
-  }) => {
-    const triggerRef = useRef<HTMLDivElement>(null)
-    const [value, setValue] = useState<string | null>(null)
-    const [open, setOpen] = useState(false)
+  }
 
-    useEffect(() => {
-      props.onSelect?.({ value })
-    }, [value])
+  export const Root = ({
+    children,
+    open: openProp,
+    setOpen: setOpenProp,
+    onSelect,
+    ...props
+  }: RootProps) => {
+    const triggerRef = useRef<HTMLDivElement>(null)
+    const parentRef = useRef<HTMLDivElement>(null)
+    const [open, setOpen] = useState(false)
 
     const memoizedValue = useMemo(
       () => ({
         triggerRef,
-        open: props.open ?? open,
-        setOpen: props.setOpen ?? setOpen,
-        value,
-        setValue
+        parentRef,
+        open: openProp ?? open,
+        setOpen: setOpenProp ?? setOpen,
+        onSelect
       }),
-      [open, props.open, value, triggerRef]
+      [openProp, triggerRef, parentRef]
     )
 
     return (
       <ReactCtx.Provider value={memoizedValue}>
-        <ChakraBox as='section' {...props}>
+        <ChakraBox
+          as='section'
+          ref={parentRef}
+          aria-selected={false}
+          {...props}
+        >
           {children}
         </ChakraBox>
       </ReactCtx.Provider>
     )
   }
+
+  Root.displayName = 'ReactRoot'
 
   export const Trigger = ({ children, ...props }: BoxProps) => {
     const { triggerRef, setOpen } = useContext(ReactCtx)
@@ -91,14 +99,23 @@ namespace React {
     )
   }
 
+  Trigger.displayName = 'ReactTrigger'
+
   export const Item = ({
     children,
     ...props
   }: { value: string } & BoxProps) => {
-    const { setValue, setOpen } = useContext(ReactCtx)
+    const { setOpen, onSelect, parentRef } = useContext(ReactCtx)
 
-    const handleClick = () => {
-      setValue(props.value)
+    const handleClick = (e: MouseEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      e.stopPropagation()
+
+      if (onSelect) {
+        onSelect({ value: props.value })
+        parentRef?.current?.setAttribute('aria-selected', props.value)
+      }
+
       setOpen(false)
     }
 
@@ -116,6 +133,8 @@ namespace React {
       </Center>
     )
   }
+
+  Item.displayName = 'ReactItem'
 
   export const List = ({ children, ...props }: BoxProps) => {
     return (
@@ -138,6 +157,8 @@ namespace React {
     )
   }
 
+  List.displayName = 'ReactList'
+
   export const Positioner = ({
     children,
     origin = 'mouse',
@@ -152,7 +173,7 @@ namespace React {
       let rect: { x: number; y: number } = { x: 0, y: 0 }
 
       if (origin === 'mouse') {
-        rect = { x: mouseX - 25, y: mouseY}
+        rect = { x: mouseX - 25, y: mouseY }
       }
 
       if (origin === 'target') {
@@ -179,6 +200,8 @@ namespace React {
       </ChakraBox>
     )
   }
+
+  Positioner.displayName = 'ReactPositioner'
 }
 
 export default React

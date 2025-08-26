@@ -5,7 +5,7 @@ import {
   useMessageState
 } from '@/providers/Chat.provider'
 
-export default function useMessage() {
+export default function useChat() {
   const dispatch = useMessageDispatch()
   const state = useMessageState()
 
@@ -31,7 +31,7 @@ export default function useMessage() {
     dispatch({ type: 'REMOVE', payload: { id } })
   }
 
-  const react = (id: Chat['id'], reaction: Reaction) => {
+  const react = (id: Chat['id'], reaction: Exclude<Reaction, 'id'>) => {
     dispatch({ type: 'REACT', payload: { id, reaction } })
   }
 

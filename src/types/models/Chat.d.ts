@@ -5,7 +5,8 @@ interface Chat {
   room_id: string
   created_at: string
   modified_at: string | null
-  modified_id: number | ull
+  modified_id: number | null
+  player: User
   reactions: Reaction[]
 }
 
@@ -18,11 +19,11 @@ type ChatAction =
   | { type: 'ADD'; payload: { message: Chat; roomId: string } }
   | { type: 'EDIT'; payload: Chat }
   | { type: 'REMOVE'; payload: { id: Chat['id'] } }
-  | { type: 'REACT'; payload: { id: Chat['id']; reaction: Reaction } }
+  | { type: 'REACT'; payload: { id: Chat['id']; reaction: Exclude<Reaction, 'id'> } }
 
 	
 interface Reaction {
-  id: string
+  id: number
   chat_id: string
   sender_id: number
   emoji: string

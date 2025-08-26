@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   Avatar,
   AvatarGroup,
@@ -15,7 +15,7 @@ import { v4 as uuidv4 } from 'uuid'
 import debounce from '@/lib/helpers/debounce'
 import ChatService from '@/lib/services/Chat.service'
 import Dayjs from '@/lib/third-party/day'
-import useMessage from '@/hooks/useChat'
+import useChat from '@/hooks/useChat'
 import useSession from '@/hooks/useSession'
 import { Status } from '@/enums'
 import channelNp from '@/socket'
@@ -26,7 +26,9 @@ interface TextBoxProps extends StackProps {
 
 export default function TextBox({ players, ...props }: TextBoxProps) {
   const { session, room } = useSession()
-  const { append } = useMessage()
+  const { append } = useChat()
+
+  const pendingIdRef = useRef<Chat['id'] | null>(null)
 
   const [txt, setTxt] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -87,35 +89,41 @@ export default function TextBox({ players, ...props }: TextBoxProps) {
     e.preventDefault()
     e.stopPropagation()
 
-    if (txt.trim().length <= 0) return
+    const content = txt.trim()
+    if (content.length <= 0) return
+
+    if (!pendingIdRef.current) {
+      pendingIdRef.current = uuidv4()
+    }
 
     const searchParams = new URLSearchParams(location.search)
 
-    const id = uuidv4()
     const userId = searchParams.get('userId')!
     const roomId = searchParams.get('roomId')!
 
     const newMessage: Chat = {
-      id,
-      message: txt.trim(),
+      id: pendingIdRef.current,
+      message: content,
       sender_id: Number(userId),
       room_id: roomId,
       created_at: Dayjs().format('YYYY-MM-DD HH:mm:ss'),
       modified_at: null,
       modified_id: null,
+      player: session!,
       reactions: []
     }
 
     setTxt('')
 
     append({ message: newMessage, roomId })
-    ChatService.send({ message: txt, senderId: Number(userId), roomId }) // delegate to a server thread
-
+    ChatService.send({ message: content, senderId: Number(userId), roomId }) // delegate to a server thread
     channelNp.emit('message', {
       room: roomId,
       user_id: Number(userId),
-      message: txt
+      message: content
     })
+
+    pendingIdRef.current = null
   }
 
   return (

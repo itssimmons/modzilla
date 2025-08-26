@@ -151,7 +151,7 @@ function App() {
           overflow='hidden'
         >
           <ChannelBox players={players} />
-          <ChatBox players={players} />
+          <ChatBox />
           <TextBox players={players} />
         </Grid>
       </Container>

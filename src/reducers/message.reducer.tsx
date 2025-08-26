@@ -20,7 +20,7 @@ export default function messageReducer(
     case MessageActionType.ADD:
       return {
         ...state,
-        messages: [...state.messages, action.payload.message],
+        messages: [...state.messages, action.payload.message]
       }
     case 'EDIT':
       return {
@@ -32,17 +32,30 @@ export default function messageReducer(
     case 'REACT':
       return {
         ...state,
-        messages: state.messages.map((message) =>
-          message.id === action.payload.id
-            ? {
-                ...message,
-                reactions: [
-                  ...(message?.reactions ?? []),
-                  action.payload.reaction
-                ]
-              }
-            : message
-        )
+        messages: state.messages.map((message) => {
+          if (message.id === action.payload.id) {
+            const mutableMessage = { ...message }
+            // const id = mutableMessage.reactions.length + 1
+            const reaction = { ...action.payload.reaction }
+
+            const idx = mutableMessage.reactions.findIndex(
+              (r) => r.emoji === reaction.emoji
+            )
+
+            if (idx !== -1) {
+              mutableMessage.reactions[idx].count += 1
+            } else {
+              mutableMessage.reactions.push(reaction)
+            }
+
+            return {
+              ...mutableMessage,
+              reactions: mutableMessage.reactions
+            }
+          }
+
+          return message
+        })
       }
     case 'REMOVE':
       return {
