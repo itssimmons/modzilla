@@ -1,9 +1,7 @@
 import { useEffect } from 'react'
 
-import {
-  useMessageDispatch,
-  useMessageState
-} from '@/providers/Chat.provider'
+import ChatService from '@/lib/services/Chat.service'
+import { useMessageDispatch, useMessageState } from '@/providers/Chat.provider'
 
 export default function useChat() {
   const dispatch = useMessageDispatch()
@@ -13,13 +11,7 @@ export default function useChat() {
     console.debug(state)
   }, [state])
 
-  const append = ({
-    message,
-    roomId
-  }: {
-    message: Chat
-    roomId: string
-  }) => {
+  const append = ({ message, roomId }: { message: Chat; roomId: string }) => {
     dispatch({ type: 'ADD', payload: { message, roomId } })
   }
 
@@ -31,8 +23,21 @@ export default function useChat() {
     dispatch({ type: 'REMOVE', payload: { id } })
   }
 
-  const react = (id: Chat['id'], reaction: Exclude<Reaction, 'id'>) => {
+  const react = (
+    { id, roomId }: { id: UUID; roomId: UUID },
+    reaction: Exclude<Reaction, 'id'>
+  ) => {
     dispatch({ type: 'REACT', payload: { id, reaction } })
+    ChatService.react({
+      roomId: roomId,
+      chatId: id,
+      emoji: reaction.emoji,
+      senderId: reaction.sender_id
+    }).catch(console.error)
+  }
+
+  const updateReactions = (id: UUID, reaction: Reaction) => {
+    dispatch({ type: 'UPDATE_REACTIONS', payload: { id, reaction } })
   }
 
   return {
@@ -40,6 +45,7 @@ export default function useChat() {
     append,
     edit,
     remove,
-    react
+    react,
+    updateReactions
   }
 }

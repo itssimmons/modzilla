@@ -64,6 +64,23 @@ export default function messageReducer(
           (message) => message.id !== action.payload.id
         )
       }
+    case 'UPDATE_REACTIONS':
+      return {
+        ...state,
+        messages: state.messages.map((message) => {
+          if (message.id === action.payload.id) {
+            return {
+              ...message,
+              reactions: [
+                ...message.reactions,
+                action.payload.reaction
+              ]
+            }
+          }
+
+          return message
+        })
+      }
     default:
       return state
   }

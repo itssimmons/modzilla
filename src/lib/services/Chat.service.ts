@@ -45,6 +45,30 @@ class ChatService {
     const newMessage = await res.json()
     return newMessage
   }
+  
+  public static async react(payload: {
+    roomId: UUID,
+    chatId: UUID,
+    emoji: Char,
+    senderId: ID
+  }) {
+    const res = await http<Chat>(`/chats/channel/${payload.roomId}/${payload.chatId}/react`, {
+      method: 'POST',
+      redirect: 'follow',
+      baseUrl: env.VITE_BASE_URL,
+      body: { emoji: payload.emoji, sender_id: payload.senderId },
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!res.ok) {
+      throw new Error('Something went wrong 😔')
+    }
+
+    const newReaction = await res.json()
+    return newReaction
+  }
 }
 
 export default ChatService

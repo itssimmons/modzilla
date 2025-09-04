@@ -1,6 +1,6 @@
 
 interface User {
-  id: number
+  id: ID
   username: string
   role: string
   avatar: string

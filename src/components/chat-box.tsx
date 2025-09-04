@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   Avatar,
   Badge,
@@ -14,43 +14,60 @@ import {
 import accumulate from '@/lib/helpers/accumulate'
 import Dayjs from '@/lib/third-party/day'
 import useChat from '@/hooks/useChat'
+import useHydratedEffect from '@/hooks/useHydratedEffect'
 import useSession from '@/hooks/useSession'
+import channelNp from '@/socket'
 
 import React from './react'
 
 export default function ChatBox({ ...props }: BoxProps) {
   const { session } = useSession()
-  const { state: messages, react } = useChat()
+  const { state: messages, react, updateReactions } = useChat()
 
   const scrollBoxRef = useRef<HTMLDivElement>(null)
   const pendingReactionId = useRef<Reaction['id'] | null>(null)
 
   const [action, setAction] = useState<'react' | 'edit' | 'delete' | null>(null)
-  const [messageId, setMessageId] = useState<Chat['id']>('')
+  const [chatId, setChatId] = useState<UUID | null>(null)
 
+  // TO-DO: fix this behavior
   // useLayoutEffect(() => {
   // const { current: scrollBox } = scrollBoxRef
   // if (!scrollBox) return
   // scrollBox.scrollTo(0, scrollBox.scrollHeight)
   // }, [messages])
 
-  const handleMessageReact = (payload: { senderId: number; emoji: string }) => {
-    if (pendingReactionId.current !== null) return
+  useHydratedEffect(() => {
+    channelNp.on('channel:reaction', (message: Reaction) => {
+      updateReactions(message.chat_id, message)
+    })
 
-    const message = messages.find((m) => m.id === messageId)!
+    return () => {
+      channelNp.off('activity:channel')
+    }
+  }, [])
+
+  const handleMessageReact = (payload: { senderId: ID; emoji: Char }) => {
+    if (pendingReactionId.current !== null) return
+    if (!chatId) return
+
+    const message = messages.find((m) => m.id === chatId)!
     const nextId = message.reactions.length
     pendingReactionId.current = nextId
 
-    react(messageId, {
-      id: nextId,
-      emoji: payload.emoji,
-      chat_id: messageId,
-      sender_id: payload.senderId,
-      created_at: Dayjs().format('YYYY-MM-DD HH:mm:ss'),
-      count: 1
-    })
+    react(
+      { id: chatId, roomId: message.room_id },
+      {
+        id: nextId,
+        emoji: payload.emoji,
+        chat_id: chatId,
+        sender_id: payload.senderId,
+        created_at: Dayjs().format('YYYY-MM-DD HH:mm:ss'),
+        count: 1
+      }
+    )
 
-    setMessageId('')
+    setChatId(null)
     pendingReactionId.current = null
   }
 
@@ -117,7 +134,7 @@ export default function ChatBox({ ...props }: BoxProps) {
               <Menu.Root
                 onSelect={(e) => {
                   setAction(e.value as typeof action)
-                  setMessageId(m.id)
+                  setChatId(m.id)
                 }}
               >
                 <Menu.ContextTrigger width='full'>
@@ -182,7 +199,10 @@ export default function ChatBox({ ...props }: BoxProps) {
                 open={action === 'react'}
                 setOpen={(open) => setAction(open ? 'react' : null)}
                 onSelect={(e) => {
-                  handleMessageReact({ senderId: session!.id, emoji: e.value! })
+                  handleMessageReact({
+                    senderId: session!.id,
+                    emoji: e.value as Char
+                  })
                 }}
               >
                 <Portal>

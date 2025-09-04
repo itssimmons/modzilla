@@ -1,8 +1,8 @@
 interface Room {
-  id: string
+  id: UUID
   name: string
   description: string
-  logo: string | null
   created_at: string
+  logo: string | null
   modified_at: string | null
 }
