@@ -17,10 +17,9 @@ interface ChatState {
 type ChatAction =
   | { type: 'INIT', payload: Chat[] }
   | { type: 'ADD'; payload: { message: Chat; roomId: string } }
-  | { type: 'EDIT'; payload: Chat }
+  | { type: 'EDIT'; payload: { id: Chat['id']; message: string } }
   | { type: 'REMOVE'; payload: { id: Chat['id'] } }
   | { type: 'REACT'; payload: { id: Chat['id']; reaction: Exclude<Reaction, 'id'> } }
-  | { type: 'UPDATE_REACTIONS'; payload: { id: Chat['id']; reaction: Reaction } }
 
 	
 interface Reaction {

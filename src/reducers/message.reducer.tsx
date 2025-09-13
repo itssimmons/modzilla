@@ -26,7 +26,9 @@ export default function messageReducer(
       return {
         ...state,
         messages: state.messages.map((message) =>
-          message.id === action.payload.id ? action.payload : message
+          message.id === action.payload.id
+            ? { ...message, message: action.payload.message }
+            : message
         )
       }
     case 'REACT':
@@ -71,10 +73,7 @@ export default function messageReducer(
           if (message.id === action.payload.id) {
             return {
               ...message,
-              reactions: [
-                ...message.reactions,
-                action.payload.reaction
-              ]
+              reactions: [...message.reactions, action.payload.reaction]
             }
           }
 

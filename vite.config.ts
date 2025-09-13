@@ -9,7 +9,7 @@ export default defineConfig({
     proxy: {
       '/socket.io': {
         target: 'ws://192.168.0.61:8000',
-        ws: true
+        ws: true,
       }
     }
   },

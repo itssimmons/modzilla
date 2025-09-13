@@ -6,6 +6,7 @@ import ChatBox from './components/chat-box'
 import Dialog from './components/dialog'
 import PlayerCursors from './components/player-cursors'
 import TextBox from './components/text-box'
+import { Toaster } from './components/ui/toaster'
 import { Status } from './enums'
 import useHydratedEffect from './hooks/useHydratedEffect'
 import useSession from './hooks/useSession'
@@ -128,6 +129,7 @@ function App() {
 
   return (
     <Center w='vw' h='vh' as='section' overflow='hidden'>
+      <Toaster />
       <PlayerCursors players={players} />
 
       {!authenticated && <Dialog.Unauthorized />}

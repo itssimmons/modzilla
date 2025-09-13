@@ -93,13 +93,13 @@ export default function TextBox({ players, ...props }: TextBoxProps) {
     if (content.length <= 0) return
 
     if (!pendingIdRef.current) {
-      pendingIdRef.current = uuidv4()
+      pendingIdRef.current = uuidv4() as UUID
     }
 
     const searchParams = new URLSearchParams(location.search)
 
     const userId = searchParams.get('userId')!
-    const roomId = searchParams.get('roomId')!
+    const roomId = searchParams.get('roomId') as UUID
 
     const newMessage: Chat = {
       id: pendingIdRef.current,
