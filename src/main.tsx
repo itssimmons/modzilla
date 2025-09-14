@@ -9,6 +9,7 @@ import SessionProvider from './providers/Session.provider.tsx'
 
 import './index.css'
 
+import PlayerProvider from './providers/Player.provider.tsx'
 import RoomProvider from './providers/Room.provider.tsx'
 
 createRoot(document.getElementById('root')!).render(
@@ -16,11 +17,13 @@ createRoot(document.getElementById('root')!).render(
     <ConfigProvider>
       <RoomProvider>
         <ChatProvider>
-          <SessionProvider>
-            <ChakraProvider forcedTheme='dark'>
-              <App />
-            </ChakraProvider>
-          </SessionProvider>
+          <PlayerProvider>
+            <SessionProvider>
+              <ChakraProvider forcedTheme='dark'>
+                <App />
+              </ChakraProvider>
+            </SessionProvider>
+          </PlayerProvider>
         </ChatProvider>
       </RoomProvider>
     </ConfigProvider>

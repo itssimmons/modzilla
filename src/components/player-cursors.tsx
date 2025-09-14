@@ -2,19 +2,21 @@ import { memo, useEffect, useMemo, useState } from 'react'
 import { Icon } from '@chakra-ui/react'
 
 import useDebounce from '@/hooks/useDebounce'
+import useRoom from '@/hooks/useRoom'
 import useSession from '@/hooks/useSession'
+import { Status } from '@/enums'
 import channelNp from '@/socket'
 
 import Cursor from './icon/cursor'
 import { Tooltip } from './ui/tooltip'
-import { Status } from '@/enums'
 
 interface PlayerCursorsProps {
   players: User[]
 }
 
 function PlayerCursors({ players }: PlayerCursorsProps) {
-  const { session, room } = useSession()
+  const { session } = useSession()
+  const { room } = useRoom()
 
   const [cursors, setCursors] = useState<Player.Coords[]>([])
   const [coords, setCoords] = useState<AxisCoords>({ x: 0, y: 0 })
@@ -43,7 +45,7 @@ function PlayerCursors({ players }: PlayerCursorsProps) {
       user_id: session.id,
       color: session.color,
       username: session.username,
-      room
+      room: room!.id
     }
 
     console.debug('sending cursor coords: ', payload)
@@ -95,7 +97,7 @@ function PlayerCursors({ players }: PlayerCursorsProps) {
         cursor='none'
         pointerEvents='none'
         userSelect='none'
-        zIndex='1809'
+        zIndex={100_000_000_000} // above everything
       >
         <Cursor />
       </Icon>

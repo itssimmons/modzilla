@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Center, Circle, Container, Flex, Grid, Text } from '@chakra-ui/react'
 
 import ChannelBox from './components/channel-box'
@@ -6,7 +6,7 @@ import ChatBox from './components/chat-box'
 import Dialog from './components/dialog'
 import PlayerCursors from './components/player-cursors'
 import TextBox from './components/text-box'
-import { Toaster } from './components/ui/toaster'
+import { toaster, Toaster } from './components/ui/toaster'
 import { Status } from './enums'
 import useHydratedEffect from './hooks/useHydratedEffect'
 import useSession from './hooks/useSession'
@@ -39,51 +39,114 @@ function App() {
     [searchParams]
   )
 
-  useEffect(() => {
-    const listener = () => {
-      if (document.visibilityState === 'hidden') {
-        channelNp.emit('idle', { room: roomId, user: session })
-      } else {
-        channelNp.emit('online', { room: roomId, user: session })
-      }
-    }
-
-    document.addEventListener('visibilitychange', listener)
-
-    return () => {
-      document.removeEventListener('visibilitychange', listener)
-    }
-  }, [session, roomId])
+  useHydratedEffect(() => {
+    UserService.all().then(setPlayers)
+  }, [])
 
   useHydratedEffect(() => {
     channelNp.on(
-      'activity:channel',
-      (payload: { user: User; is: 'new' | 'join' | 'leave' }) => {
-        const { is, user } = payload
-        console.debug('Activity received from server', payload)
-
-        setPlayers((players) => {
-          const copy = [...players]
-
-          if (is === 'new') copy.push(user)
-          else {
-            const index = copy.findIndex((p) => p.id === user.id)
-            if (index !== -1) copy[index].status = user.status
-          }
-
-          return copy
+      'channel:whisper',
+      (payload: {
+        from: { username: string }
+        whisper: string
+        roomId: UUID
+      }) => {
+        toaster.create({
+          action: {
+            label: 'Dismiss',
+            onClick: () => toaster.dismiss()
+          },
+          title: `@${payload.from.username} whispered on you:`,
+          duration: Infinity,
+          description: payload.whisper
         })
       }
     )
 
     return () => {
-      channelNp.off('activity:channel')
+      channelNp.off('channel:whisper')
     }
-  }, [players])
+  }, [])
 
   useHydratedEffect(() => {
-    UserService.all().then(setPlayers)
-  }, [])
+    if (!session) return
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        channelNp.emit('player:action', {
+          event: 'channel:status',
+          room: roomId,
+          payload: {
+            user: { ...session, status: Status.Idle }
+          }
+        })
+      } else {
+        channelNp.emit('player:action', {
+          event: 'channel:status',
+          room: roomId,
+          payload: {
+            user: { ...session, status: Status.Online }
+          }
+        })
+      }
+    }
+    const handleBeforeUnload = () => {
+      alert('Are you sure you want to leave?')
+
+      channelNp.emit('player:action', {
+        event: 'channel:status',
+        room: roomId,
+        payload: {
+          user: { ...session, status: Status.Offline }
+        }
+      })
+      channelNp.emit('leave', { room: roomId })
+      channelNp.disconnect()
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [session, roomId])
+
+  useHydratedEffect(() => {
+    channelNp.on('channel:status', (payload: { user: User }) => {
+      const { user } = payload
+      console.debug('Change status=', payload)
+
+      setPlayers((players) => {
+        const copy = [...players]
+
+        const idx = copy.findIndex((p) => p.id === user.id)
+
+        if (idx === -1) {
+          return [
+            ...players,
+            {
+              ...user,
+              status: user.status
+            }
+          ]
+        } else {
+          copy[idx] = {
+            ...copy[idx],
+            sid: user.sid,
+            status: user.status
+          }
+        }
+
+        return copy
+      })
+    })
+
+    return () => {
+      channelNp.off('activity:channel')
+    }
+  }, [setPlayers])
 
   useHydratedEffect(() => {
     if (!authenticated) return
@@ -107,12 +170,19 @@ function App() {
     console.debug(registerPayload)
 
     UserService.register(registerPayload)
-      .then(({ user, is }) => {
+      .then(({ user }) => {
         console.debug('User connected & registered: ', user)
         setSession(user)
 
-        channelNp.emit('connected', { room: roomId, user, op: is })
+        channelNp.emit('connected', { user_id: user.id })
         channelNp.emit('join', { room: roomId })
+        /* channelNp.emit('player:action', {
+          event: 'channel:status',
+          room: roomId,
+          payload: {
+            user: { ...user, status: Status.Online }
+          }
+        }) */
 
         searchParams.set('userId', String(user.id))
         searchParams.set('roomId', roomId)
@@ -122,14 +192,13 @@ function App() {
       .finally(() => setConnecting(false))
   }, [authenticated, roomId])
 
-  const playersOnline = useMemo(
+  const onlinePlayerCount = useMemo(
     () => players.filter((p) => p.status === Status.Online).length,
     [players]
   )
 
   return (
     <Center w='vw' h='vh' as='section' overflow='hidden'>
-      <Toaster />
       <PlayerCursors players={players} />
 
       {!authenticated && <Dialog.Unauthorized />}
@@ -140,7 +209,7 @@ function App() {
           <Flex flexDir='row' alignItems='center' columnGap={2}>
             <Circle backgroundColor='green.500' size={2} borderRadius='full' />
             <Text fontSize='sm' fontWeight={500} color='gray.400'>
-              {playersOnline} users online
+              {onlinePlayerCount} Online users
             </Text>
           </Flex>
         </Flex>
@@ -157,6 +226,8 @@ function App() {
           <TextBox players={players} />
         </Grid>
       </Container>
+
+      <Toaster />
     </Center>
   )
 }

@@ -16,22 +16,37 @@ import debounce from '@/lib/helpers/debounce'
 import ChatService from '@/lib/services/Chat.service'
 import Dayjs from '@/lib/third-party/day'
 import useChat from '@/hooks/useChat'
+import useHydratedEffect from '@/hooks/useHydratedEffect'
+import { usePlayer } from '@/hooks/usePlayer'
 import useSession from '@/hooks/useSession'
 import { Status } from '@/enums'
 import channelNp from '@/socket'
+
+import AnimatedDots from './ui/animated-dots'
+import useRoom from '@/hooks/useRoom'
 
 interface TextBoxProps extends StackProps {
   players: User[]
 }
 
 export default function TextBox({ players, ...props }: TextBoxProps) {
-  const { session, room } = useSession()
+  const { session } = useSession()
+  const { room } = useRoom()
   const { append } = useChat()
+  const { whisper } = usePlayer()
 
   const pendingIdRef = useRef<Chat['id'] | null>(null)
+  const textareaElementRef = useRef<HTMLTextAreaElement>(null)
 
   const [txt, setTxt] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+
+  useHydratedEffect(() => {
+    if (whisper.current && textareaElementRef.current) {
+      setTxt(`@${whisper.current.username} `)
+      textareaElementRef.current.focus()
+    }
+  }, [whisper.current])
 
   const location = useMemo(() => window.location, [])
   const emptyTxt = useMemo(() => txt.trim().length <= 0, [txt])
@@ -49,24 +64,29 @@ export default function TextBox({ players, ...props }: TextBoxProps) {
 
   const stopWriting = useCallback(
     debounce(() => {
-      channelNp.emit('activity:channel', {
-        user: { ...session, status: Status.Online },
-        room,
-        is: 'old'
+      channelNp.emit('player:action', {
+        event: 'channel:status',
+        room: room!.id,
+        payload: {
+          user: { ...session, status: Status.Online }
+        }
       })
+
       setIsTyping(false)
     }, 1000),
-    []
+    [room, session]
   )
 
   const handleChange = (ev: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTxt(ev.target.value)
 
     if (!isTyping) {
-      channelNp.emit('activity:channel', {
-        user: { ...session, status: Status.Typing },
-        room,
-        is: 'old'
+      channelNp.emit('player:action', {
+        event: 'channel:status',
+        room: room!.id,
+        payload: {
+          user: { ...session, status: Status.Typing }
+        }
       })
 
       setIsTyping(true)
@@ -100,6 +120,26 @@ export default function TextBox({ players, ...props }: TextBoxProps) {
 
     const userId = searchParams.get('userId')!
     const roomId = searchParams.get('roomId') as UUID
+
+    if (whisper.current) {
+      console.log('Sending whisper to ', whisper.current)
+
+      const whisperMessage = content
+        .replace(`@${whisper.current.username}`, '')
+        .trim()
+
+      if (whisperMessage.length <= 0) return
+
+      whisper.submit({
+        from: { username: session!.username },
+        to: { id: whisper.current.id, sid: whisper.current.sid },
+        whisper: whisperMessage,
+        roomId
+      })
+      setTxt('')
+      pendingIdRef.current = null
+      return
+    }
 
     const newMessage: Chat = {
       id: pendingIdRef.current,
@@ -174,11 +214,12 @@ export default function TextBox({ players, ...props }: TextBoxProps) {
         data-role='message-box'
         gridRow='2'
         h='full'
-        gridColumn={'2/3'}
+        gridColumn='2/3'
         gap={0}
         {...props}
       >
         <Textarea
+          ref={textareaElementRef}
           onChange={handleChange}
           onKeyDown={handleEnter}
           value={txt}
@@ -210,39 +251,5 @@ export default function TextBox({ players, ...props }: TextBoxProps) {
         </Button>
       </HStack>
     </Box>
-  )
-}
-
-const AnimatedDots = () => {
-  return (
-    <Flex columnGap='.8px' fontSize='small' fontWeight='light' color='gray.500'>
-      <Box
-        animationName='jump'
-        animationDuration='1300ms'
-        animationDelay='0ms'
-        animationIterationCount='infinite'
-        animationTimingFunction='linear'
-      >
-        .
-      </Box>
-      <Box
-        animationName='jump'
-        animationDuration='1300ms'
-        animationDelay='-1100ms'
-        animationIterationCount='infinite'
-        animationTimingFunction='linear'
-      >
-        .
-      </Box>
-      <Box
-        animationName='jump'
-        animationDuration='1300ms'
-        animationDelay='-900ms'
-        animationIterationCount='infinite'
-        animationTimingFunction='linear'
-      >
-        .
-      </Box>
-    </Flex>
   )
 }
