@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useState } from 'react'
 import { Icon } from '@chakra-ui/react'
 
+import contrastColor from '@/lib/helpers/contrastRatio'
 import useDebounce from '@/hooks/useDebounce'
 import useRoom from '@/hooks/useRoom'
 import useSession from '@/hooks/useSession'
@@ -91,9 +92,9 @@ function PlayerCursors({ players }: PlayerCursorsProps) {
       <Icon
         position='absolute'
         color={session?.color ?? 'gray.100'}
-        left={`${coords.x}px`}
-        top={`${coords.y}px`}
-        transform='translate(-50%, -50%)'
+        left='0px'
+        top='0px'
+        transform={`translate(${coords.x - 16}px, ${coords.y - 12}px)`}
         cursor='none'
         pointerEvents='none'
         userSelect='none'
@@ -110,23 +111,28 @@ function PlayerCursors({ players }: PlayerCursorsProps) {
           <Tooltip
             key={c.user_id}
             content={`${c.username} (${player.status})`}
-            positioning={{ placement: 'bottom' }}
+            positioning={{
+              placement: 'bottom-start',
+              offset: { crossAxis: 28, mainAxis: -4 }
+            }}
             contentProps={{
-              fontSize: 'sm',
-              background: 'gray.950',
-              color: 'gray.400',
-              padding: 1
+              fontSize: 'x-small',
+              background: c.color ?? 'gray.700',
+              color:
+                contrastColor('#000000', c.color ?? '#000000') > 4.5
+                  ? '#000000'
+                  : '#FFFFFF',
+              padding: 0.5,
             }}
           >
             <Icon
               position='absolute'
               color={c.color ?? 'gray.100'}
-              left={`${c.x}px`}
-              top={`${c.y}px`}
-              transition={`top 300ms ease-in-out,
-            left 300ms ease-in-out,
-            opacity 300ms ease-in-out`}
-              transform='translate(-50%, -50%)'
+              left='0px'
+              top='0px'
+              transition={`transform 300ms ease-in-out,
+                opacity 300ms ease-in-out`}
+              transform={`translate(${c.x - 16}px, ${c.y - 12}px)`}
               cursor='none'
               userSelect='none'
               zIndex='tooltip'

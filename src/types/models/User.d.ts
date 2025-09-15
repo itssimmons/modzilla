@@ -17,7 +17,7 @@ type PlayerAction = { type: 'WHISPERING'; payload: Pick<User, 'username' | 'id'>
 namespace Player {
   export type Coords = {
     user_id: number
-    color: Color.Hex | `{${string}}`
+    color: Color.Hex
     room: string
     username: string
   } & AxisCoords
