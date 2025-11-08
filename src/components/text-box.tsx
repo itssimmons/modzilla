@@ -134,7 +134,6 @@ export default function TextBox({ players, ...props }: TextBoxProps) {
         from: { username: session!.username },
         to: { id: whisper.current.id, sid: whisper.current.sid },
         whisper: whisperMessage,
-        roomId
       })
       setTxt('')
       pendingIdRef.current = null

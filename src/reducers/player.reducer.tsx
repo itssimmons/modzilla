@@ -3,7 +3,8 @@ export const initialState: PlayerState = {
 }
 
 export enum PlayerActionType {
-  WHISPERING = 'WHISPERING'
+  WHISPERING = 'WHISPERING',
+  BLOCK = 'BLOCK'
 }
 
 export default function playerReducer(
@@ -13,6 +14,9 @@ export default function playerReducer(
   switch (action.type) {
     case PlayerActionType.WHISPERING:
       return { ...state, whispering: action.payload }
+    case PlayerActionType.BLOCK:
+      // pass
+      return state
     default:
       return state
   }

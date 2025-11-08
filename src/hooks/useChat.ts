@@ -14,7 +14,7 @@ export default function useChat() {
   const clipboard = useClipboard()
 
   useEffect(() => {
-    console.debug(state)
+    console.debug("Messages=", state['messages'])
   }, [state])
 
   const append = ({ message, roomId }: { message: Chat; roomId: string }) => {

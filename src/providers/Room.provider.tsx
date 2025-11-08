@@ -17,7 +17,6 @@ const RoomProvider = ({ children }: { children: React.ReactNode }) => {
   const roomId = useMemo(() => searchParams.get('roomId'), [searchParams])
 
   useHydratedEffect(() => {
-    console.log(roomId, typeof roomId)
     if (!roomId) {
       setRoom(null)
       return

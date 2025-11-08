@@ -12,11 +12,15 @@ import {
   VStack
 } from '@chakra-ui/react'
 
+import useCountdown from '@/hooks/useCountdown'
+import useHydratedEffect from '@/hooks/useHydratedEffect'
 import { usePlayer } from '@/hooks/usePlayer'
 import useRoom from '@/hooks/useRoom'
 import useSession from '@/hooks/useSession'
 import { Status } from '@/enums'
+import channelNp from '@/socket'
 
+import { toaster } from './ui/toaster'
 import { Tooltip } from './ui/tooltip'
 
 interface ChannelBoxProps {
@@ -25,6 +29,26 @@ interface ChannelBoxProps {
 
 export default function ChannelBox({ players, ...props }: ChannelBoxProps) {
   const { room } = useRoom()
+
+  const countdown = useCountdown()
+
+  useHydratedEffect(() => {
+    channelNp.on('channel:block', (data) => {
+      console.debug('Blocked data=', data)
+
+      toaster.create({
+        description: `You have been blocked by @${data.from.username}`,
+        type: 'info'
+      })
+      
+      countdown.start()
+      console.log(countdown.signal())
+    })
+
+    return () => {
+      channelNp.off('channel:block')
+    }
+  }, [])
 
   return (
     <Flex
@@ -79,8 +103,8 @@ export default function ChannelBox({ players, ...props }: ChannelBoxProps) {
 
 const Content = (props: { idx: number } & User) => {
   const { session } = useSession()
-  // const { room } = useRoom()
   const { copyTag, block, whisper } = usePlayer()
+  const { room } = useRoom()
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [action, setAction] = useState<'whisper' | 'copy' | 'block' | null>(
@@ -90,21 +114,35 @@ const Content = (props: { idx: number } & User) => {
   const whisperAllowed = useMemo(() => {
     return (
       props.status !== Status.Offline &&
-      props.id !== session!.id &&
+      props.id !== session?.id &&
       props.username.toLowerCase() !== 'assistant'
     )
   }, [props.status, props.id, props.username, session])
+
+  const blockAllowed = useMemo(() => {
+    return (
+      props.status !== Status.Offline &&
+      props.id !== session?.id &&
+      props.username.toLowerCase() !== 'assistant'
+    )
+  }, [props.id, session])
 
   const extraProps = useMemo(() => {
     const colors: { [key: string]: string } = {
       [Status.Online]: 'green.500',
       [Status.Offline]: 'gray.700',
       [Status.Typing]: 'green.500',
-      [Status.Idle]: 'yellow.500'
+      [Status.Idle]: 'yellow.500',
+      [Status.Blocked]: 'red.500'
+    }
+
+    const opacity: { [key: string]: number } = {
+      [Status.Blocked]: 0.5
     }
 
     return {
-      color: colors[props.status]
+      color: colors[props.status] || 'gray.500',
+      opacity: opacity[props.status] || 1
     }
   }, [props.status])
 
@@ -115,17 +153,26 @@ const Content = (props: { idx: number } & User) => {
       alignItems='center'
       cursor='pointer'
       pl={2}
+      opacity={extraProps.opacity}
       _hover={{ backgroundColor: 'gray.700' }}
     >
       <Menu.Root
         onSelect={(e) => {
           setAction(e.value as typeof action)
-          
-          console.log('User props: ', props)
+
+          console.debug('User props=', props)
 
           const caseHandlers: { [key: string]: () => void } = {
             copy: () => copyTag(props.username),
-            block: () => block(),
+            block: () =>
+              block({
+                roomId: room!.id,
+                to: {
+                  id: props.id,
+                  sid: props.sid
+                },
+                from: { username: session!.username }
+              }),
             whisper: () =>
               whisper.to({
                 id: props.id,
@@ -148,7 +195,7 @@ const Content = (props: { idx: number } & User) => {
               <Avatar.Image src={props.avatar} />
             </Avatar.Root>
             <Text fontSize='small' fontWeight={500} color='gray.300'>
-              {props.username} {props.id === session!.id && '(You)'}
+              {props.username} {props.id === session?.id && '(You)'}
             </Text>
           </Flex>
         </Menu.ContextTrigger>
@@ -159,15 +206,18 @@ const Content = (props: { idx: number } & User) => {
                 value='whisper'
                 disabled={!whisperAllowed}
                 title={
-                  !whisperAllowed
-                    ? 'You cannot whisper this user'
-                    : undefined
+                  !whisperAllowed ? 'You cannot whisper this user' : undefined
                 }
               >
                 Whisper
               </MenuItem>
               <MenuItem value='copy'>Copy tag</MenuItem>
-              <MenuItem value='block' color='red.500'>
+              <MenuItem
+                value='block'
+                color='red.500'
+                disabled={!blockAllowed}
+                title={!blockAllowed ? 'You cannot block this user' : undefined}
+              >
                 Block
               </MenuItem>
             </Menu.Content>

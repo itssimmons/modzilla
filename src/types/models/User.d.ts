@@ -12,7 +12,15 @@ type PlayerState = {
   whispering: Pick<User, 'username' | 'id' | 'sid'> | null
 }
 
-type PlayerAction = { type: 'WHISPERING'; payload: Pick<User, 'username' | 'id'> | null }
+type PlayerAction =
+  | {
+      type: 'WHISPERING'
+      payload: Pick<User, 'username' | 'id' | 'sid'> | null
+    }
+  | {
+      type: 'BLOCK'
+      payload: { roomId: UUID; to: { id: ID }; from: { username: string } }
+    }
 
 namespace Player {
   export type Coords = {

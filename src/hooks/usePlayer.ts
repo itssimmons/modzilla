@@ -1,4 +1,5 @@
 import { toaster } from '@/components/ui/toaster'
+import { Status } from '@/enums'
 import { usePlayerDispatch, usePlayerState } from '@/providers/Player.provider'
 import { PlayerActionType } from '@/reducers/player.reducer'
 import channelNp from '@/socket'
@@ -20,8 +21,26 @@ export function usePlayer() {
     })
   }
 
-  const block = () => {
-    console.log('block')
+  const block = (payload: {
+    roomId: UUID
+    to: { id: ID; sid: string }
+    from: { username: string }
+  }) => {
+    dispatch({ type: PlayerActionType.BLOCK, payload })
+    channelNp.emit('player:action', {
+      event: 'channel:block',
+      payload: {
+        to: payload.to,
+        from: payload.from
+      }
+    })
+    channelNp.emit('player:action', {
+      event: 'channel:status',
+      room: payload.roomId,
+      payload: {
+        user: { ...payload.to, status: Status.Blocked }
+      }
+    })
   }
 
   const whisperTo = (payload: Pick<User, 'username' | 'id' | 'sid'>) => {
@@ -29,21 +48,20 @@ export function usePlayer() {
   }
 
   const whisperSubmit = (payload: {
-    to: { id: ID, sid: string }
+    to: { id: ID; sid: string }
     from: { username: string }
     whisper: string
-    roomId: UUID
   }) => {
+    dispatch({ type: PlayerActionType.WHISPERING, payload: null })
     channelNp.emit('player:action', {
       event: 'channel:whisper',
-      room: payload.roomId,
+      room: null,
       payload: {
         to: payload.to,
         from: payload.from,
         whisper: payload.whisper
       }
     })
-    dispatch({ type: PlayerActionType.WHISPERING, payload: null })
   }
 
   return {
